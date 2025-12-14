@@ -1,0 +1,16 @@
+# Laboratorium 4 TBO 
+
+## Monika Gardyjas 
+
+### Zadanie 3 
+
+Jako że pracuję na narzędziu Github, zadanie wykonałam w wersji Github Actions. Bazując na przedstawionym przykładzie utworzyłam plik **.github/workflows/security-scan.yml**, dostosowując go do mojego lokalnego systemu Windows. 
+
+Po zapisaniu dokonanych zmian i wywołaniu komendy **git push origin main**, w zakładce Actions mojego repozytorium na Github zobaczyłam historię uruchamianych workflow: 
+
+
+
+Kilka uruchomień zakończonych niepowodzeniem jest wynikiem początkowych błędów w konfiguracji CI/CD. Wszystkie z nich zostały poprawione w najnowszej wersji pliku **security-scan.yml**
+
+#### Link do zadania w CI/CD, które się wykonało i pokazało wynik testów: 
+!(Github Action)[link]
