@@ -4,13 +4,88 @@
 
 ### Zadanie 3 
 
-Jako że pracuję na narzędziu Github, zadanie wykonałam w wersji Github Actions. Bazując na przedstawionym przykładzie utworzyłam plik **.github/workflows/security-scan.yml**, dostosowując go do mojego lokalnego systemu Windows. 
+Jako że pracuję na narzędziu Github, zadanie wykonałam w wersji Github Actions. Bazując na przedstawionym przykładzie utworzyłam plik **.github/workflows/security-scan.yml**, dokonując przy tym lekkich zmian w Dockerfile z powodu problemów z 11-jdk-slim w moim środowisku: 
 
-Po zapisaniu dokonanych zmian i wywołaniu komendy **git push origin main**, w zakładce Actions mojego repozytorium na Github zobaczyłam historię uruchamianych workflow: 
+'''
+# ---- Deploy Stage ----
+FROM eclipse-temurin:11-jre-jammy
+'''
+
+Po zapisaniu dokonanych zmian i wywołaniu komendy **git push origin main**, w zakładce Actions mojego repozytorium na Github zobaczyłam historię uruchamianych workflow.Kilka uruchomień zakończonych niepowodzeniem jest wynikiem początkowych błędów w konfiguracji CI/CD. Wszystkie z nich zostały poprawione w najnowszej wersji pliku **security-scan.yml**: 
 
 
+'''
+name: Security Scan
 
-Kilka uruchomień zakończonych niepowodzeniem jest wynikiem początkowych błędów w konfiguracji CI/CD. Wszystkie z nich zostały poprawione w najnowszej wersji pliku **security-scan.yml**
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t myapp:latest .
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: 'myapp:latest'
+          vuln-type: 'os,library'
+          format: 'table'
+
+      - name: Install Semgrep
+        run: |
+          sudo pip install semgrep --ignore-installed
+      - name: Run Semgrep SAST
+        run: |
+          semgrep --config p/security-audit --error --json .
+'''
+
 
 #### Link do zadania w CI/CD, które się wykonało i pokazało wynik testów: 
-!(Github Action)[link]
+!(Github Action)[https://github.com/gardyjam/task4/actions/runs/20284228165]
+
+Skany wykryły dużo podatności, w tym o stopniu HIGH oraz CRITICAL. 
+
+### Zadanie 4 
+
+Zgodnie z intrukcją uruchomiłam aplikację i skanowanie OWASP ZAP (u mnie w wersji Windows). 
+
+Fragmenty wyniku w konsoli:
+
+'''
+Using the Automation Framework
+Total of 22 URLs
+PASS: Vulnerable JS Library (Powered by Retire.js) [10003]
+PASS: In Page Banner Information Leak [10009]
+...
+WARN-NEW: Information Disclosure - Suspicious Comments [10027] x 2
+        http://host.docker.internal:8080/vendors/bootstrap/js/bootstrap.bundle.min.js (200 OK)
+        http://host.docker.internal:8080/vendors/jquery/jquery.min.js (200 OK)
+WARN-NEW: Content Security Policy (CSP) Header Not Set [10038] x 5
+        http://host.docker.internal:8080 (200 OK)
+...
+'''
+
+OWASP ZAP znalazł zdecydowanie mniej podatności i są one innego typu. Np. podatnością wskazaną w tym skanie, a nie w poprzednich (SAST/SCA) jest: 
+
+'''
+WARN-NEW: Storable and Cacheable Content [10049] x 5
+        http://host.docker.internal:8080 (200 OK)
+        http://host.docker.internal:8080/ (200 OK)
+        http://host.docker.internal:8080/robots.txt (404 Not Found)
+        http://host.docker.internal:8080/sitemap.xml (404 Not Found)
+        http://host.docker.internal:8080/vendors/jquery-mask/dist/jquery.mask.min.js (200 OK)
+'''
+
+Różnice w wykrywanych podatnościach wynikają z tego, że DAST (OWASP ZAP) odnosi się do już działającej aplikacji, wówczas gdy SAST/SCA skupiają się na kodzie aplikacji i jej zależnościach.
+
+
