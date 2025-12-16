@@ -1,6 +1,3 @@
-# Monika Gardyjas
-# LAB 4 
-
 name: Security Scan
 
 on:
@@ -11,24 +8,25 @@ on:
 
 jobs:
   security-tests:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out code
         uses: actions/checkout@v2
 
       - name: Build Docker image
-        run: docker build -t myapp:latest .
-
+        run: |
+          docker build -t myapp:latest .
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: 'myapp:latest'
           vuln-type: 'os,library'
           format: 'table'
 
       - name: Install Semgrep
-        run: pip install semgrep
-
+        run: |
+          sudo pip install semgrep --ignore-installed
       - name: Run Semgrep SAST
-        run: semgrep --config p/security-audit --error --json .
+        run: |
+          semgrep --config p/security-audit --error --json .
